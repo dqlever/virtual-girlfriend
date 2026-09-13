@@ -1,4 +1,5 @@
 import aiosqlite
+import json
 import time
 from datetime import datetime, timedelta
 from .config import get_db_path
@@ -52,6 +53,15 @@ async def get_db():
                 total_replies INTEGER NOT NULL DEFAULT 0,
                 current_round INTEGER NOT NULL DEFAULT 0,
                 mode_switches INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        await _db.execute("""
+            CREATE TABLE IF NOT EXISTS chat_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                extras TEXT,
+                created_at TEXT NOT NULL
             )
         """)
         await _db.commit()
@@ -126,6 +136,66 @@ async def query_by_tag(tag, folder_path=None, limit=50):
 async def delete_memory(memory_id):
     db = await get_db()
     await db.execute("DELETE FROM memories WHERE id = ?", (memory_id,))
+    await db.commit()
+
+
+async def add_chat_history(role, content, extras=None):
+    db = await get_db()
+    now = datetime.now().isoformat()
+    extras_json = json.dumps(extras, ensure_ascii=False) if extras else None
+    await db.execute(
+        "INSERT INTO chat_history (role, content, extras, created_at) VALUES (?, ?, ?, ?)",
+        (role, content, extras_json, now)
+    )
+    await db.execute("DELETE FROM chat_history WHERE id NOT IN (SELECT id FROM chat_history ORDER BY id DESC LIMIT 60)")
+    await db.commit()
+
+
+async def get_recent_chat_history(limit=20):
+    db = await get_db()
+    async with db.execute(
+        "SELECT role, content, extras, created_at FROM chat_history ORDER BY id DESC LIMIT ?",
+        (limit,)
+    ) as cur:
+        rows = await cur.fetchall()
+    result = []
+    for r in reversed(rows):
+        role = r[0]
+        content = r[1]
+        extras_json = r[2]
+        if extras_json:
+            try:
+                extras = json.loads(extras_json)
+                parts = [content]
+                for ext in extras:
+                    if ext.get("type") == "image":
+                        parts.append("[发送了一张图片]")
+                    elif ext.get("type") == "voice":
+                        parts.append(f"[发送了一条语音消息: {ext.get('text', '')}]")
+                    elif ext.get("type") == "emoji":
+                        parts.append(f"[发送了表情: {ext.get('content', '')}]")
+                    elif ext.get("type") == "redpacket":
+                        parts.append(f"[发了一个红包: {ext.get('title', '')}]")
+                    elif ext.get("type") == "location":
+                        parts.append(f"[分享了位置: {ext.get('name', '')}]")
+                    elif ext.get("type") == "fortune":
+                        parts.append("[发了今日运势]")
+                    elif ext.get("type") == "weather":
+                        parts.append("[发了天气信息]")
+                    elif ext.get("type") == "game":
+                        parts.append("[邀请玩游戏]")
+                    elif ext.get("type") == "moment":
+                        parts.append(f"[发了朋友圈: {ext.get('content', '')}]")
+                content = " ".join(parts)
+            except:
+                pass
+        result.append({"role": role, "content": content})
+    return result
+
+
+async def clear_chat_history():
+    db = await get_db()
+    await db.execute("DELETE FROM chat_history")
     await db.commit()
 
 async def delete_expired_memories():
