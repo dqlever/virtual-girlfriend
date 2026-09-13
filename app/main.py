@@ -2,20 +2,20 @@ import os
 import json
 import asyncio
 import random
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 import urllib.request
 import urllib.parse
 
-from .config import get_server_config
+from .config import get_server_config, get_llm_config, get_auth_password
 from .chat_engine import process_message, get_proactive_message, MOMENT_TEMPLATES
 from .memory_system import get_intimacy_score, get_stats, get_memory_count
 from .character_card import get_character_name, get_character_greeting, reload_character_card
 from .intimacy import get_intimacy_level
 from .scheduler import start_scheduler, stop_scheduler
-from .config import get_llm_config
 
 
 @asynccontextmanager
@@ -28,10 +28,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="虚拟女友", lifespan=lifespan)
 
+_SESSION_KEY = os.environ.get("SESSION_SECRET", "vg_secret_2024_xp_5201314")
+app.add_middleware(SessionMiddleware, secret_key=_SESSION_KEY, session_cookie="vg_session", max_age=86400 * 30)
+
 static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 connected_clients: list[WebSocket] = []
+
+
+def check_auth(request: Request) -> bool:
+    return request.session.get("logged_in") is True
 
 
 async def proactive_loop():
@@ -51,13 +58,35 @@ async def proactive_loop():
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
+async def index(request: Request):
+    if not check_auth(request):
+        with open(os.path.join(static_dir, "login.html"), "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read(), media_type="text/html; charset=utf-8")
     with open(os.path.join(static_dir, "index.html"), "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read(), media_type="text/html; charset=utf-8")
 
 
+@app.post("/api/login")
+async def login(request: Request):
+    body = await request.json()
+    pwd = body.get("password", "").strip()
+    expected = get_auth_password()
+    if expected and pwd == expected:
+        request.session["logged_in"] = True
+        return {"success": True}
+    return JSONResponse(status_code=401, content={"success": False, "message": "密码错误"})
+
+
+@app.post("/api/logout")
+async def logout(request: Request):
+    request.session.clear()
+    return {"success": True}
+
+
 @app.get("/api/status")
-async def get_status():
+async def get_status(request: Request):
+    if not check_auth(request):
+        return JSONResponse(status_code=401, content={"error": "未登录"})
     score = await get_intimacy_score()
     stats = await get_stats()
     mem_count = await get_memory_count()
@@ -76,7 +105,9 @@ async def get_status():
 
 
 @app.get("/api/character")
-async def get_character_info():
+async def get_character_info(request: Request):
+    if not check_auth(request):
+        return JSONResponse(status_code=401, content={"error": "未登录"})
     return {
         "name": get_character_name(),
         "greeting": get_character_greeting(),
@@ -84,13 +115,17 @@ async def get_character_info():
 
 
 @app.post("/api/character/reload")
-async def reload_character():
+async def reload_character(request: Request):
+    if not check_auth(request):
+        return JSONResponse(status_code=401, content={"error": "未登录"})
     reload_character_card()
     return {"name": get_character_name(), "greeting": get_character_greeting()}
 
 
 @app.get("/api/moments")
-async def get_moments():
+async def get_moments(request: Request):
+    if not check_auth(request):
+        return JSONResponse(status_code=401, content={"error": "未登录"})
     name = get_character_name()
     return {
         "character_name": name,
@@ -99,7 +134,9 @@ async def get_moments():
 
 
 @app.get("/api/image")
-async def generate_image(prompt: str):
+async def generate_image(prompt: str, request: Request):
+    if not check_auth(request):
+        return JSONResponse(status_code=401, content={"error": "未登录"})
     encoded = urllib.parse.quote(prompt)
     url = f"https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt={encoded}&image_size=square"
     try:
@@ -117,6 +154,16 @@ async def generate_image(prompt: str):
 
 @app.websocket("/ws/chat")
 async def chat_ws(websocket: WebSocket):
+    expected_pwd = get_auth_password()
+
+    if expected_pwd:
+        cookie = websocket.headers.get("cookie", "")
+        if "vg_session" not in cookie:
+            await websocket.accept()
+            await websocket.send_text(json.dumps({"type": "error", "content": "请先登录"}, ensure_ascii=False))
+            await websocket.close()
+            return
+
     await websocket.accept()
     connected_clients.append(websocket)
 

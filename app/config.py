@@ -39,6 +39,9 @@ DEFAULT_CONFIG = {
         "cleanup_minute": 0,
     },
     "character_card": "characters/example.json",
+    "auth": {
+        "password": "xp5201314",
+    },
 }
 
 _config_cache = None
@@ -97,6 +100,13 @@ def get_character_card_path():
         base = os.path.dirname(os.path.dirname(__file__))
         path = os.path.join(base, path)
     return path
+
+def get_auth_password():
+    pwd = load_config().get("auth", {}).get("password", "")
+    env_pwd = os.environ.get("AUTH_PASSWORD")
+    if env_pwd:
+        pwd = env_pwd
+    return pwd
 
 def get_db_path():
     path = get_memory_config().get("db_path", "data/memory.db")

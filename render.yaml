@@ -11,3 +11,5 @@ services:
         value: https://api.deepseek.com/v1
       - key: LLM_MODEL
         value: deepseek-chat
+      - key: AUTH_PASSWORD
+        value: xp5201314
