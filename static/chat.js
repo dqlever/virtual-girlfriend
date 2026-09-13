@@ -184,10 +184,11 @@ function handleExtra(extra) {
       break;
 
     case "voice":
+      const voiceText = extra.text || "";
       const voiceDiv = document.createElement("div");
       voiceDiv.className = "message bot";
       voiceDiv.innerHTML = `
-        <div class="voice-msg" onclick="toggleVoice(this)">
+        <div class="voice-msg" onclick="playVoice(this, '${voiceText.replace(/'/g, "\\'")}')">
           <span class="voice-icon">🎤</span>
           <div class="voice-bar">${generateVoiceBars(extra.duration)}</div>
           <span class="voice-duration">${extra.duration}"</span>
@@ -246,8 +247,56 @@ function generateVoiceBars(duration) {
   return bars;
 }
 
-function toggleVoice(el) {
-  el.classList.toggle("playing");
+let currentVoiceEl = null;
+
+function playVoice(el, text) {
+  if (!window.speechSynthesis) {
+    addMessage("你的浏览器不支持语音播放", "system");
+    return;
+  }
+
+  if (currentVoiceEl && currentVoiceEl !== el) {
+    currentVoiceEl.classList.remove("playing");
+    currentVoiceEl.querySelector(".voice-icon").textContent = "🎤";
+  }
+
+  if (el.classList.contains("playing")) {
+    window.speechSynthesis.cancel();
+    el.classList.remove("playing");
+    el.querySelector(".voice-icon").textContent = "🎤";
+    currentVoiceEl = null;
+    return;
+  }
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "zh-CN";
+  utter.rate = 1.0;
+  utter.pitch = 1.3;
+  utter.volume = 1.0;
+
+  const voices = window.speechSynthesis.getVoices();
+  const zhVoice = voices.find(v => v.lang.startsWith("zh"));
+  if (zhVoice) utter.voice = zhVoice;
+
+  utter.onstart = () => {
+    el.classList.add("playing");
+    el.querySelector(".voice-icon").textContent = "🔊";
+    currentVoiceEl = el;
+  };
+
+  utter.onend = () => {
+    el.classList.remove("playing");
+    el.querySelector(".voice-icon").textContent = "🎤";
+    currentVoiceEl = null;
+  };
+
+  utter.onerror = () => {
+    el.classList.remove("playing");
+    el.querySelector(".voice-icon").textContent = "🎤";
+    currentVoiceEl = null;
+  };
+
+  window.speechSynthesis.speak(utter);
 }
 
 function sendMessage() {

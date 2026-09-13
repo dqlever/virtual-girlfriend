@@ -455,7 +455,19 @@ html, body {
   cursor: pointer;
 }
 
-.voice-msg.playing { opacity: 0.7; }
+.voice-msg.playing {
+  background: rgba(7, 193, 96, 0.08);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.voice-msg.playing .voice-bar span {
+  background: #07c160;
+}
+
+.voice-msg.playing .voice-duration {
+  color: #07c160;
+}
 
 .voice-icon {
   font-size: 20px;

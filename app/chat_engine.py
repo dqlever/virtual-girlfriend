@@ -193,7 +193,9 @@ def generate_extras(reply_text):
 
     if should_send_voice(reply_text):
         phrase = random.choice(VOICE_PHRASES)
-        extras.append({"type": "voice", "text": phrase, "duration": random.randint(2, 8)})
+        voice_text = phrase if random.random() < 0.4 else reply_text[:30]
+        duration = max(2, min(15, len(voice_text) // 2))
+        extras.append({"type": "voice", "text": voice_text, "duration": duration})
 
     emoji = pick_emoji(reply_text)
     if random.random() < 0.4:
