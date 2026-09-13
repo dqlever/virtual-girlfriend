@@ -17,12 +17,40 @@
         <span class="avatar" id="char-avatar">💕</span>
         <span id="char-name">加载中...</span>
       </div>
-      <span id="intimacy-badge" class="badge">💗 30</span>
+      <div class="status-actions">
+        <button class="icon-btn" id="call-btn" title="语音通话">📞</button>
+        <button class="icon-btn" id="video-btn" title="视频通话">📹</button>
+        <button class="icon-btn" id="more-btn" title="更多">⋯</button>
+      </div>
     </div>
     <div class="status-row secondary">
       <span id="intimacy-level">--</span>
       <span>💬 <span id="msg-count">0</span></span>
       <span>🧠 <span id="mem-count">0</span></span>
+    </div>
+  </div>
+
+  <!-- 更多菜单 -->
+  <div id="more-menu" class="more-menu hidden">
+    <div class="more-menu-item" data-action="moments">
+      <span class="more-icon">📷</span>
+      <span>朋友圈</span>
+    </div>
+    <div class="more-menu-item" data-action="fortune">
+      <span class="more-icon">🔮</span>
+      <span>今日运势</span>
+    </div>
+    <div class="more-menu-item" data-action="weather">
+      <span class="more-icon">🌤️</span>
+      <span>查天气</span>
+    </div>
+    <div class="more-menu-item" data-action="game">
+      <span class="more-icon">🎮</span>
+      <span>玩游戏</span>
+    </div>
+    <div class="more-menu-item" data-action="settings">
+      <span class="more-icon">⚙️</span>
+      <span>设置</span>
     </div>
   </div>
 
@@ -35,10 +63,85 @@
 
   <div id="warning-banner" class="warning hidden"></div>
 
+  <!-- 表情包面板 -->
+  <div id="emoji-panel" class="emoji-panel hidden">
+    <div class="emoji-tabs">
+      <button class="emoji-tab active" data-tab="emoji">😊 表情</button>
+      <button class="emoji-tab" data-tab="sticker">🎨 贴纸</button>
+      <button class="emoji-tab" data-tab="favorite">❤️ 收藏</button>
+    </div>
+    <div class="emoji-grid" id="emoji-grid"></div>
+  </div>
+
+  <!-- +号功能面板 -->
+  <div id="plus-panel" class="plus-panel hidden">
+    <div class="plus-grid">
+      <div class="plus-item" data-action="album">
+        <div class="plus-icon">🖼️</div>
+        <span>相册</span>
+      </div>
+      <div class="plus-item" data-action="camera">
+        <div class="plus-icon">📷</div>
+        <span>拍摄</span>
+      </div>
+      <div class="plus-item" data-action="video">
+        <div class="plus-icon">🎥</div>
+        <span>视频通话</span>
+      </div>
+      <div class="plus-item" data-action="voice">
+        <div class="plus-icon">📞</div>
+        <span>语音通话</span>
+      </div>
+      <div class="plus-item" data-action="redpacket">
+        <div class="plus-icon">🧧</div>
+        <span>红包</span>
+      </div>
+      <div class="plus-item" data-action="transfer">
+        <div class="plus-icon">💰</div>
+        <span>转账</span>
+      </div>
+      <div class="plus-item" data-action="location">
+        <div class="plus-icon">📍</div>
+        <span>位置</span>
+      </div>
+      <div class="plus-item" data-action="favorite">
+        <div class="plus-icon">⭐</div>
+        <span>收藏</span>
+      </div>
+      <div class="plus-item" data-action="card">
+        <div class="plus-icon">👤</div>
+        <span>个人名片</span>
+      </div>
+      <div class="plus-item" data-action="file">
+        <div class="plus-icon">📁</div>
+        <span>文件</span>
+      </div>
+      <div class="plus-item" data-action="fortune">
+        <div class="plus-icon">🔮</div>
+        <span>抽签</span>
+      </div>
+      <div class="plus-item" data-action="voice-input">
+        <div class="plus-icon">🎤</div>
+        <span>语音输入</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 图片上传隐藏input -->
+  <input type="file" id="image-upload" accept="image/*" hidden>
+
   <div id="input-bar">
+    <button class="input-icon-btn" id="voice-btn">🎙️</button>
     <input type="text" id="message-input" placeholder="输入消息..." autocomplete="off" maxlength="500">
+    <button class="input-icon-btn" id="emoji-btn">😊</button>
+    <button class="input-icon-btn" id="plus-btn">+</button>
     <button id="send-btn">发送</button>
   </div>
+</div>
+
+<!-- 弹窗容器 -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div id="modal-content" class="modal-content"></div>
 </div>
 
 <script src="/static/chat.js"></script>

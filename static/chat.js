@@ -8,9 +8,89 @@ const intimacyLevel = document.getElementById("intimacy-level");
 const msgCount = document.getElementById("msg-count");
 const memCount = document.getElementById("mem-count");
 const warningBanner = document.getElementById("warning-banner");
+const emojiBtn = document.getElementById("emoji-btn");
+const plusBtn = document.getElementById("plus-btn");
+const emojiPanel = document.getElementById("emoji-panel");
+const plusPanel = document.getElementById("plus-panel");
+const emojiGrid = document.getElementById("emoji-grid");
+const moreBtn = document.getElementById("more-btn");
+const moreMenu = document.getElementById("more-menu");
+const imageUpload = document.getElementById("image-upload");
+const callBtn = document.getElementById("call-btn");
+const videoBtn = document.getElementById("video-btn");
+const modalOverlay = document.getElementById("modal-overlay");
+const modalContent = document.getElementById("modal-content");
 
 let ws = null;
 let waitingForReply = false;
+let currentEmojiTab = "emoji";
+
+// 表情数据
+const EMOJI_LIST = [
+  "😀","😃","😄","😁","😆","😅","🤣","😂",
+  "🙂","🙃","😉","😊","😇","🥰","😍","🤩",
+  "😘","😗","😚","😙","🥲","😋","😛","😜",
+  "🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐",
+  "🤨","😐","😑","😶","😏","😒","🙄","😬",
+  "🤥","😌","😔","😪","🤤","😴","😷","🤒",
+  "🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵",
+  "🤯","🤠","🥳","😎","🤓","🧐","😕","😟",
+  "🙁","😮","😯","😲","😳","🥺","😦","😧",
+  "😨","😰","😥","😢","😭","😱","😖","😣",
+  "😞","😓","😩","😫","🥱","😤","😡","😠",
+  "🤬","😈","👿","💀","☠️","💩","🤡","👹",
+  "👺","👻","👽","👾","🤖","😺","😸","😹",
+  "😻","😼","😽","🙀","😿","😾","❤️","🧡",
+  "💛","💚","💙","💜","🖤","🤍","🤎","💔",
+  "💕","💞","💓","💗","💖","💘","💝","💟",
+  "👍","👎","👌","✌️","🤞","🤟","🤘","🤙",
+  "👋","🤚","🖐️","✋","🖖","👏","🙌","👐",
+  "🤲","🤝","🙏","✍️","💪","🦵","🦶","👀",
+  "👄","👅","👂","👃","🧠","🦷","🦴","👶",
+];
+
+const STICKER_LIST = [
+  { emoji: "🐱", name: "猫咪" },
+  { emoji: "🐶", name: "狗狗" },
+  { emoji: "🐰", name: "兔子" },
+  { emoji: "🐻", name: "熊熊" },
+  { emoji: "🐼", name: "熊猫" },
+  { emoji: "🦊", name: "狐狸" },
+  { emoji: "🐨", name: "考拉" },
+  { emoji: "🐯", name: "老虎" },
+  { emoji: "🦁", name: "狮子" },
+  { emoji: "🐮", name: "牛牛" },
+  { emoji: "🐷", name: "猪猪" },
+  { emoji: "🐸", name: "青蛙" },
+  { emoji: "🐵", name: "猴子" },
+  { emoji: "🐔", name: "鸡鸡" },
+  { emoji: "🐧", name: "企鹅" },
+  { emoji: "🦆", name: "鸭子" },
+  { emoji: "🦉", name: "猫头鹰" },
+  { emoji: "🦋", name: "蝴蝶" },
+  { emoji: "🐝", name: "蜜蜂" },
+  { emoji: "🐢", name: "乌龟" },
+  { emoji: "🐙", name: "章鱼" },
+  { emoji: "🦀", name: "螃蟹" },
+  { emoji: "🐳", name: "鲸鱼" },
+  { emoji: "🦄", name: "独角兽" },
+];
+
+const FORTUNE_DATA = [
+  { lucky: "大吉", desc: "今天运气超棒！做什么都顺风顺水，约她出来玩成功率很高哦~", tags: ["桃花运爆棚", "宜约会", "忌宅家"] },
+  { lucky: "中吉", desc: "今天运气不错，心情好的话运气会更好！主动一点会有惊喜~", tags: ["运势上升", "宜主动", "忌消极"] },
+  { lucky: "小吉", desc: "平平淡淡的一天，但小小的幸福就在身边，用心感受吧~", tags: ["平稳顺遂", "宜聊天", "忌熬夜"] },
+  { lucky: "吉", desc: "今天会有小开心的事情发生，保持期待的心情哦~", tags: ["小有收获", "宜分享", "忌焦虑"] },
+  { lucky: "末吉", desc: "运气一般般，但也不会有坏事发生。平常心对待就好~", tags: ["平稳度日", "宜休息", "忌冲动"] },
+  { lucky: "凶", desc: "今天可能有点小倒霉，但别担心，抱抱就好啦~", tags: ["需要安慰", "宜抱抱", "忌作死"] },
+];
+
+const WEATHER_DATA = [
+  { city: "杭州", icon: "☀️", temp: "26°", desc: "晴朗", humidity: "45%", wind: "微风" },
+  { city: "杭州", icon: "⛅", temp: "23°", desc: "多云", humidity: "60%", wind: "3级" },
+  { city: "杭州", icon: "🌧️", temp: "19°", desc: "小雨", humidity: "85%", wind: "4级" },
+  { city: "杭州", icon: "☀️", temp: "28°", desc: "晴转多云", humidity: "50%", wind: "2级" },
+];
 
 function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
@@ -107,7 +187,7 @@ function handleExtra(extra) {
       const voiceDiv = document.createElement("div");
       voiceDiv.className = "message bot";
       voiceDiv.innerHTML = `
-        <div class="voice-msg">
+        <div class="voice-msg" onclick="toggleVoice(this)">
           <span class="voice-icon">🎤</span>
           <div class="voice-bar">${generateVoiceBars(extra.duration)}</div>
           <span class="voice-duration">${extra.duration}"</span>
@@ -144,6 +224,14 @@ function handleExtra(extra) {
       `;
       chatArea.appendChild(momentDiv);
       break;
+
+    case "redpacket":
+      addRedPacket(extra, "bot");
+      break;
+
+    case "location":
+      addLocation(extra, "bot");
+      break;
   }
   chatArea.scrollTop = chatArea.scrollHeight;
 }
@@ -156,6 +244,10 @@ function generateVoiceBars(duration) {
     bars += `<span style="height:${h}px"></span>`;
   }
   return bars;
+}
+
+function toggleVoice(el) {
+  el.classList.toggle("playing");
 }
 
 function sendMessage() {
@@ -195,6 +287,496 @@ async function loadStatus() {
   }
 }
 
+// 表情面板
+function renderEmojiPanel() {
+  emojiGrid.innerHTML = "";
+  let list = [];
+
+  if (currentEmojiTab === "emoji") {
+    list = EMOJI_LIST.map(e => ({ emoji: e }));
+  } else if (currentEmojiTab === "sticker") {
+    list = STICKER_LIST;
+  } else {
+    list = ["❤️","💕","😘","🥰","😍","😊","😢","😭","😡","🤔","👍","👎","🙏","💪","🎉","🌸"].map(e => ({ emoji: e }));
+  }
+
+  list.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "emoji-item";
+    div.textContent = item.emoji;
+    div.onclick = () => insertEmoji(item.emoji);
+    emojiGrid.appendChild(div);
+  });
+}
+
+function insertEmoji(emoji) {
+  const input = messageInput;
+  const start = input.selectionStart;
+  const end = input.selectionEnd;
+  const text = input.value;
+  input.value = text.substring(0, start) + emoji + text.substring(end);
+  input.focus();
+  input.selectionStart = input.selectionEnd = start + emoji.length;
+}
+
+function toggleEmojiPanel() {
+  const isActive = emojiBtn.classList.contains("active");
+  closeAllPanels();
+  if (!isActive) {
+    emojiPanel.classList.remove("hidden");
+    emojiBtn.classList.add("active");
+    renderEmojiPanel();
+  }
+}
+
+function togglePlusPanel() {
+  const isActive = plusBtn.classList.contains("active");
+  closeAllPanels();
+  if (!isActive) {
+    plusPanel.classList.remove("hidden");
+    plusBtn.classList.add("active");
+  }
+}
+
+function closeAllPanels() {
+  emojiPanel.classList.add("hidden");
+  plusPanel.classList.add("hidden");
+  emojiBtn.classList.remove("active");
+  plusBtn.classList.remove("active");
+}
+
+// +号面板功能
+function handlePlusAction(action) {
+  closeAllPanels();
+
+  switch (action) {
+    case "album":
+      imageUpload.click();
+      break;
+    case "camera":
+      imageUpload.setAttribute("capture", "environment");
+      imageUpload.click();
+      setTimeout(() => imageUpload.removeAttribute("capture"), 100);
+      break;
+    case "video":
+      showCallScreen("video");
+      break;
+    case "voice":
+      showCallScreen("voice");
+      break;
+    case "redpacket":
+      sendRedPacket();
+      break;
+    case "transfer":
+      showTransfer();
+      break;
+    case "location":
+      sendLocation();
+      break;
+    case "fortune":
+      showFortune();
+      break;
+    case "favorite":
+      addMessage("⭐ 暂无收藏内容", "system");
+      break;
+    case "card":
+      showCard();
+      break;
+    case "file":
+      addMessage("📁 暂不支持文件传输", "system");
+      break;
+    case "voice-input":
+      addMessage("🎤 语音输入功能开发中...", "system");
+      break;
+  }
+}
+
+// 图片上传
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    addUserImage(event.target.result);
+    // 模拟 AI 回复
+    setTimeout(() => {
+      showTyping();
+      setTimeout(() => {
+        hideTyping();
+        const replies = [
+          "哇，这张照片好棒！是在哪里拍的呀？🥺",
+          "好好看！你的拍照技术越来越好了~ 😍",
+          "看到这张照片就想起你了，想你~ 🥰",
+          "咦这是什么呀？快给我讲讲~ 🤔",
+          "哇塞，太好看了吧！存了存了~ ✨",
+          "看着照片感觉你就在我身边一样~ 💗",
+        ];
+        addMessage(replies[Math.floor(Math.random() * replies.length)], "bot");
+        waitingForReply = false;
+        loadStatus();
+      }, 1500 + Math.random() * 1000);
+    }, 500);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function addUserImage(src) {
+  const div = document.createElement("div");
+  div.className = "message user-image";
+  div.innerHTML = `<img src="${src}" alt="图片">`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  showReadReceipt();
+}
+
+// 红包
+function sendRedPacket() {
+  const greetings = [
+    "恭喜发财，大吉大利",
+    "爱你哟~",
+    "拿去买好吃的",
+    "小小心意",
+    "宝贝节日快乐",
+  ];
+  const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+  const amount = (Math.random() * 50 + 5).toFixed(2);
+
+  const div = document.createElement("div");
+  div.className = "redpacket-msg user";
+  div.innerHTML = `
+    <div class="redpacket-header">
+      <span class="redpacket-icon">🧧</span>
+      <span class="redpacket-title">微信红包</span>
+    </div>
+    <div class="redpacket-desc">${greeting}</div>
+  `;
+  div.onclick = () => {
+    addMessage(`领取了你的红包 ¥${amount}`, "system");
+    setTimeout(() => {
+      addMessage("哇！谢谢宝贝的红包~ 爱死你了！🥰🥰🥰", "bot");
+    }, 800);
+  };
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // 模拟对方领取
+  setTimeout(() => {
+    addMessage("💕 对方已领取红包", "system");
+  }, 2000);
+}
+
+function addRedPacket(data, type) {
+  const div = document.createElement("div");
+  div.className = `redpacket-msg ${type}`;
+  div.innerHTML = `
+    <div class="redpacket-header">
+      <span class="redpacket-icon">🧧</span>
+      <span class="redpacket-title">微信红包</span>
+    </div>
+    <div class="redpacket-desc">${data.greeting || "恭喜发财"}</div>
+  `;
+  chatArea.appendChild(div);
+}
+
+// 位置
+function sendLocation() {
+  const places = [
+    { name: "西湖断桥", addr: "浙江省杭州市西湖区北山街" },
+    { name: "杭州东站", addr: "浙江省杭州市上城区全福桥路2号" },
+    { name: "杭州大厦", addr: "浙江省杭州市下城区武林广场21号" },
+    { name: "浙江大学", addr: "浙江省杭州市西湖区余杭塘路866号" },
+  ];
+  const place = places[Math.floor(Math.random() * places.length)];
+
+  const div = document.createElement("div");
+  div.className = "location-card user";
+  div.innerHTML = `
+    <div class="location-img">📍</div>
+    <div class="location-name">${place.name}</div>
+    <div class="location-addr">${place.addr}</div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  showReadReceipt();
+
+  setTimeout(() => {
+    showTyping();
+    setTimeout(() => {
+      hideTyping();
+      addMessage("哇，你在那里呀~ 等我过来找你！🥺", "bot");
+    }, 1500);
+  }, 800);
+}
+
+function addLocation(data, type) {
+  const div = document.createElement("div");
+  div.className = `location-card ${type}`;
+  div.innerHTML = `
+    <div class="location-img">📍</div>
+    <div class="location-name">${data.name}</div>
+    <div class="location-addr">${data.addr}</div>
+  `;
+  chatArea.appendChild(div);
+}
+
+// 运势
+function showFortune() {
+  const fortune = FORTUNE_DATA[Math.floor(Math.random() * FORTUNE_DATA.length)];
+  const div = document.createElement("div");
+  div.className = "fortune-card";
+  div.innerHTML = `
+    <div class="fortune-title">🔮 今日运势</div>
+    <div class="fortune-lucky">${fortune.lucky}</div>
+    <div class="fortune-desc">${fortune.desc}</div>
+    <div class="fortune-tags">
+      ${fortune.tags.map(t => `<span class="fortune-tag">${t}</span>`).join("")}
+    </div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// 天气
+function showWeather() {
+  const weather = WEATHER_DATA[Math.floor(Math.random() * WEATHER_DATA.length)];
+  const div = document.createElement("div");
+  div.className = "weather-card";
+  div.innerHTML = `
+    <div class="weather-city">${weather.city}</div>
+    <div class="weather-main">
+      <span class="weather-icon">${weather.icon}</span>
+      <span class="weather-temp">${weather.temp}</span>
+    </div>
+    <div class="weather-desc">${weather.desc}</div>
+    <div class="weather-details">
+      <span>💧 湿度 ${weather.humidity}</span>
+      <span>🌬️ ${weather.wind}</span>
+    </div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// 猜拳游戏
+function showGame() {
+  const div = document.createElement("div");
+  div.className = "game-card";
+  div.id = "rps-game";
+  div.innerHTML = `
+    <div class="game-title">🎮 来玩石头剪刀布吧！</div>
+    <div class="game-options">
+      <div class="game-option" onclick="playRPS('rock')">✊</div>
+      <div class="game-option" onclick="playRPS('scissors')">✌️</div>
+      <div class="game-option" onclick="playRPS('paper')">🖐️</div>
+    </div>
+    <div class="game-result">选择你的出招~</div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function playRPS(userChoice) {
+  const choices = ["rock", "scissors", "paper"];
+  const emojis = { rock: "✊", scissors: "✌️", paper: "🖐️" };
+  const botChoice = choices[Math.floor(Math.random() * 3)];
+
+  let result = "";
+  let resultText = "";
+  if (userChoice === botChoice) {
+    result = "平局！再来一局~";
+    resultText = "tie";
+  } else if (
+    (userChoice === "rock" && botChoice === "scissors") ||
+    (userChoice === "scissors" && botChoice === "paper") ||
+    (userChoice === "paper" && botChoice === "rock")
+  ) {
+    result = "你赢了！好厉害~ 🎉";
+    resultText = "win";
+  } else {
+    result = "你输了！嘻嘻~ 😜";
+    resultText = "lose";
+  }
+
+  const gameCard = document.getElementById("rps-game");
+  if (gameCard) {
+    gameCard.innerHTML = `
+      <div class="game-title">🎮 石头剪刀布</div>
+      <div style="display:flex;justify-content:space-around;align-items:center;margin:15px 0;">
+        <div style="text-align:center;">
+          <div style="font-size:36px;">${emojis[userChoice]}</div>
+          <div style="font-size:12px;color:#999;">你</div>
+        </div>
+        <div style="font-size:24px;">VS</div>
+        <div style="text-align:center;">
+          <div style="font-size:36px;">${emojis[botChoice]}</div>
+          <div style="font-size:12px;color:#999;">她</div>
+        </div>
+      </div>
+      <div class="game-result">${result}</div>
+    `;
+    gameCard.id = "";
+  }
+
+  // AI 后续反应
+  setTimeout(() => {
+    if (resultText === "win") {
+      addMessage("呜呜你欺负我... 再来一局！我一定要赢回来！😤", "bot");
+    } else if (resultText === "lose") {
+      addMessage("嘿嘿~ 我厉害吧！要不要再来一局呀？😜", "bot");
+    } else {
+      addMessage("居然平局了！再来再来，这次一定要分出胜负！✊", "bot");
+    }
+  }, 800);
+}
+
+// 通话界面
+function showCallScreen(type) {
+  const isVideo = type === "video";
+  modalContent.innerHTML = `
+    <div class="call-screen">
+      <div class="call-avatar">💕</div>
+      <div class="call-name">${charName.textContent}</div>
+      <div class="call-status">${isVideo ? "视频通话中..." : "等待对方接听..."}</div>
+      <div class="call-actions">
+        <button class="call-btn hangup" onclick="closeModal()">📞</button>
+        ${!isVideo ? '<button class="call-btn accept" onclick="acceptCall()">🎧</button>' : ""}
+      </div>
+    </div>
+  `;
+  modalOverlay.classList.remove("hidden");
+}
+
+function acceptCall() {
+  const statusEl = document.querySelector(".call-status");
+  if (statusEl) {
+    statusEl.textContent = "通话中... 00:01";
+    let seconds = 1;
+    const timer = setInterval(() => {
+      seconds++;
+      const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const s = (seconds % 60).toString().padStart(2, "0");
+      statusEl.textContent = `通话中... ${m}:${s}`;
+    }, 1000);
+    modalContent.dataset.timer = timer;
+  }
+}
+
+function closeModal() {
+  modalOverlay.classList.add("hidden");
+  if (modalContent.dataset.timer) {
+    clearInterval(modalContent.dataset.timer);
+  }
+  modalContent.innerHTML = "";
+}
+
+// 名片
+function showCard() {
+  const div = document.createElement("div");
+  div.className = "message bot";
+  div.innerHTML = `
+    <div style="display:flex;gap:10px;align-items:center;">
+      <div style="width:40px;height:40px;background:linear-gradient(135deg,#ff6b9d,#ff8fab);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;">💕</div>
+      <div>
+        <div style="font-size:14px;font-weight:600;">${charName.textContent}</div>
+        <div style="font-size:12px;color:#999;">微信号：xiaoqi_love</div>
+      </div>
+    </div>
+  `;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// 转账
+function showTransfer() {
+  addMessage("💰 转账功能只是装饰哦~ 心意到了就好啦！🥰", "bot");
+}
+
+// 更多菜单
+function toggleMoreMenu() {
+  moreMenu.classList.toggle("hidden");
+}
+
+function handleMoreAction(action) {
+  moreMenu.classList.add("hidden");
+  switch (action) {
+    case "moments":
+      loadMoments();
+      break;
+    case "fortune":
+      showFortune();
+      break;
+    case "weather":
+      showWeather();
+      break;
+    case "game":
+      showGame();
+      break;
+    case "settings":
+      showSettings();
+      break;
+  }
+}
+
+async function loadMoments() {
+  try {
+    const res = await fetch("/api/moments");
+    const data = await res.json();
+    data.moments.forEach(m => {
+      const div = document.createElement("div");
+      div.className = "moment-card";
+      div.innerHTML = `
+        <div class="moment-header">
+          <div class="moment-avatar">💕</div>
+          <span class="moment-name">${data.character_name}</span>
+        </div>
+        <div class="moment-text">${m.text}</div>
+        <div class="moment-footer">
+          <span>${m.time}</span>
+          <span class="moment-likes">❤️ ${m.likes}</span>
+        </div>
+      `;
+      chatArea.appendChild(div);
+    });
+    chatArea.scrollTop = chatArea.scrollHeight;
+  } catch (e) {
+    addMessage("加载朋友圈失败...", "error");
+  }
+}
+
+// 设置
+function showSettings() {
+  modalContent.innerHTML = `
+    <div class="settings-panel">
+      <div class="settings-title">⚙️ 设置</div>
+      <div class="settings-item">
+        <span>声音提醒</span>
+        <span style="color:#07c160;">开启</span>
+      </div>
+      <div class="settings-item">
+        <span>震动反馈</span>
+        <span style="color:#07c160;">开启</span>
+      </div>
+      <div class="settings-item">
+        <span>置顶聊天</span>
+        <span style="color:#07c160;">已置顶</span>
+      </div>
+      <div class="settings-item">
+        <span>消息免打扰</span>
+        <span style="color:#999;">关闭</span>
+      </div>
+      <div class="settings-item">
+        <span>亲密度显示</span>
+        <span style="color:#07c160;">开启</span>
+      </div>
+      <button class="settings-close" onclick="closeModal()">关闭</button>
+    </div>
+  `;
+  modalOverlay.classList.remove("hidden");
+}
+
+// 事件绑定
 sendBtn.addEventListener("click", sendMessage);
 messageInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -202,5 +784,62 @@ messageInput.addEventListener("keydown", (e) => {
     sendMessage();
   }
 });
+
+messageInput.addEventListener("focus", () => {
+  closeAllPanels();
+});
+
+emojiBtn.addEventListener("click", toggleEmojiPanel);
+plusBtn.addEventListener("click", togglePlusPanel);
+moreBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  toggleMoreMenu();
+});
+
+document.addEventListener("click", (e) => {
+  if (!moreMenu.contains(e.target) && !moreBtn.contains(e.target)) {
+    moreMenu.classList.add("hidden");
+  }
+  if (!modalContent.contains(e.target) && e.target !== modalOverlay) {
+    // modal 点击外部关闭
+  }
+});
+
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) {
+    closeModal();
+  }
+});
+
+// 表情标签切换
+document.querySelectorAll(".emoji-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".emoji-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    currentEmojiTab = tab.dataset.tab;
+    renderEmojiPanel();
+  });
+});
+
+// +号面板项
+document.querySelectorAll(".plus-item").forEach(item => {
+  item.addEventListener("click", () => {
+    handlePlusAction(item.dataset.action);
+  });
+});
+
+// 更多菜单项
+document.querySelectorAll(".more-menu-item").forEach(item => {
+  item.addEventListener("click", () => {
+    handleMoreAction(item.dataset.action);
+  });
+});
+
+// 图片上传
+imageUpload.addEventListener("change", handleImageUpload);
+
+// 通话按钮
+callBtn.addEventListener("click", () => showCallScreen("voice"));
+videoBtn.addEventListener("click", () => showCallScreen("video"));
 
 connect();
