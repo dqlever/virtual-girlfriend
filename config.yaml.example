@@ -1,0 +1,28 @@
+llm:
+  api_key: "your-api-key-here"
+  base_url: "https://api.deepseek.com/v1"
+  model: "deepseek-chat"
+  temperature: 0.8
+  max_tokens: 500
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+memory:
+  db_path: "data/memory.db"
+  short_term_ttl: 86400
+  long_term_ttl: 604800
+
+intimacy:
+  initial_score: 30
+  per_message_bonus: 0.5
+  round_bonus: 2
+  daily_login_bonus: 5
+  max_score: 100
+
+scheduler:
+  cleanup_time: "03:00"
+  daily_summary_time: "23:00"
+
+character_card: "characters/example.json"

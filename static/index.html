@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>💕 虚拟女友</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div id="app">
+  <div id="status-bar">
+    <div class="status-row">
+      <div class="status-left">
+        <span class="avatar" id="char-avatar">💕</span>
+        <span id="char-name">加载中...</span>
+      </div>
+      <span id="intimacy-badge" class="badge">💗 30</span>
+    </div>
+    <div class="status-row secondary">
+      <span id="intimacy-level">--</span>
+      <span>💬 <span id="msg-count">0</span></span>
+      <span>🧠 <span id="mem-count">0</span></span>
+    </div>
+  </div>
+
+  <div id="chat-area"></div>
+
+  <div id="typing-indicator" class="typing-indicator hidden">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    <span>对方正在输入...</span>
+  </div>
+
+  <div id="warning-banner" class="warning hidden"></div>
+
+  <div id="input-bar">
+    <input type="text" id="message-input" placeholder="输入消息..." autocomplete="off" maxlength="500">
+    <button id="send-btn">发送</button>
+  </div>
+</div>
+
+<script src="/static/chat.js"></script>
+</body>
+</html>
