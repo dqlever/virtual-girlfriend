@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD python -c "import os; os.system(f'python -m uvicorn app.main:app --host 0.0.0.0 --port {os.environ.get("PORT", 8000)} --ws websockets')"
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --ws websockets
