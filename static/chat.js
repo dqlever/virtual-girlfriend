@@ -24,6 +24,34 @@ const modalContent = document.getElementById("modal-content");
 let ws = null;
 let waitingForReply = false;
 let currentEmojiTab = "emoji";
+let chatHistory = [];
+const MAX_HISTORY = 200;
+
+function saveChatHistory() {
+  try {
+    localStorage.setItem("vg_chat_history", JSON.stringify(chatHistory.slice(-MAX_HISTORY)));
+  } catch(e) {}
+}
+
+function loadChatHistory() {
+  try {
+    const data = localStorage.getItem("vg_chat_history");
+    if (data) {
+      chatHistory = JSON.parse(data);
+      chatHistory.forEach(function(item) {
+        if (item.type === "text") {
+          addMessage(item.text, item.role);
+        } else if (item.type === "receipt") {
+          showReadReceipt();
+        } else if (item.type === "extra") {
+          handleExtra(item.extra);
+        } else if (item.type === "system") {
+          addMessage(item.text, "system");
+        }
+      });
+    }
+  } catch(e) {}
+}
 
 // 表情数据
 const EMOJI_LIST = [
@@ -96,7 +124,10 @@ function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}/ws/chat`);
 
-  ws.onopen = () => { loadStatus(); };
+  ws.onopen = () => {
+    loadChatHistory();
+    loadStatus();
+  };
 
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
@@ -105,7 +136,9 @@ function connect() {
       case "greeting":
         charName.textContent = data.character_name;
         document.title = `💕 ${data.character_name}`;
-        addMessage(data.content, "bot");
+        if (chatHistory.length === 0) {
+          addMessage(data.content, "bot");
+        }
         break;
 
       case "read":
@@ -164,6 +197,8 @@ function addMessage(text, type = "bot") {
   div.textContent = text;
   chatArea.appendChild(div);
   chatArea.scrollTop = chatArea.scrollHeight;
+  chatHistory.push({ type: "text", text: text, role: type });
+  saveChatHistory();
 }
 
 function showReadReceipt() {
@@ -172,6 +207,8 @@ function showReadReceipt() {
   div.textContent = "已读";
   chatArea.appendChild(div);
   chatArea.scrollTop = chatArea.scrollHeight;
+  chatHistory.push({ type: "receipt" });
+  saveChatHistory();
 }
 
 function handleExtra(extra) {
@@ -235,6 +272,8 @@ function handleExtra(extra) {
       break;
   }
   chatArea.scrollTop = chatArea.scrollHeight;
+  chatHistory.push({ type: "extra", extra: extra });
+  saveChatHistory();
 }
 
 function generateVoiceBars(duration) {
@@ -819,10 +858,23 @@ function showSettings() {
         <span>亲密度显示</span>
         <span style="color:#07c160;">开启</span>
       </div>
+      <div class="settings-item" style="border-top:1px solid #eee;margin-top:8px;padding-top:12px;">
+        <span>🗑️ 清空聊天记录</span>
+        <span style="color:#e74c3c;cursor:pointer;" onclick="clearChatHistory()">点击清空</span>
+      </div>
       <button class="settings-close" onclick="closeModal()">关闭</button>
     </div>
   `;
   modalOverlay.classList.remove("hidden");
+}
+
+function clearChatHistory() {
+  if (!confirm("确定要清空所有聊天记录吗？")) return;
+  chatHistory = [];
+  localStorage.removeItem("vg_chat_history");
+  chatArea.innerHTML = "";
+  closeModal();
+  addMessage("聊天记录已清空", "system");
 }
 
 // 事件绑定
