@@ -140,16 +140,20 @@ async def generate_image(prompt: str, request: Request):
     encoded = urllib.parse.quote(prompt)
     url = f"https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt={encoded}&image_size=square"
     try:
-        req = urllib.request.Request(url)
-        resp = urllib.request.urlopen(req, timeout=30)
-        content_type = resp.headers.get("Content-Type", "image/jpeg")
-        return StreamingResponse(
-            iter([resp.read()]),
-            media_type=content_type,
-            headers={"Cache-Control": "public, max-age=3600"}
-        )
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        resp = urllib.request.urlopen(req, timeout=60)
+        content_type = resp.headers.get("Content-Type", "")
+        data = resp.read()
+        if "image" in content_type or len(data) > 1000:
+            return StreamingResponse(
+                iter([data]),
+                media_type=content_type if "image" in content_type else "image/jpeg",
+                headers={"Cache-Control": "public, max-age=3600"}
+            )
+        else:
+            return JSONResponse(status_code=500, content={"error": "Image generation failed", "detail": data[:200].decode("utf-8", errors="replace")})
     except Exception as e:
-        return {"error": str(e)}
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.websocket("/ws/chat")
