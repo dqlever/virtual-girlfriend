@@ -513,6 +513,37 @@ html, body {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: 4px;
+}
+
+.image-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 220px;
+  height: 220px;
+  background: linear-gradient(135deg, #f0f0f0, #e8e8e8);
+  border-radius: 4px;
+  gap: 10px;
+}
+
+.image-loading span {
+  font-size: 13px;
+  color: #999;
+}
+
+.img-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ddd;
+  border-top-color: #ff6b9d;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .image-caption {
