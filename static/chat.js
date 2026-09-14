@@ -237,12 +237,20 @@ function handleExtra(extra) {
     case "image":
       const imgDiv = document.createElement("div");
       imgDiv.className = "message bot";
+      const imgId = "img_" + Date.now();
       imgDiv.innerHTML = `
         <div class="image-msg">
-          <img src="/api/image?prompt=${encodeURIComponent(extra.prompt)}" alt="图片" loading="lazy">
+          <div class="image-loading" id="${imgId}_loading">
+            <div class="img-spinner"></div>
+            <span>生成中...</span>
+          </div>
+          <img id="${imgId}" style="display:none;" alt="图片" onload="document.getElementById('${imgId}_loading').style.display='none';this.style.display='block';" onerror="retryImg('${imgId}',0)" loading="lazy">
           ${extra.caption ? `<div class="image-caption">${extra.caption}</div>` : ""}
         </div>
       `;
+      const imgEl = imgDiv.querySelector("img");
+      imgEl.dataset.prompt = encodeURIComponent(extra.prompt);
+      imgEl.src = `/api/image?prompt=${encodeURIComponent(extra.prompt)}&t=${Date.now()}`;
       chatArea.appendChild(imgDiv);
       break;
 
@@ -287,6 +295,22 @@ function generateVoiceBars(duration) {
 }
 
 let currentVoiceEl = null;
+let zhVoiceCache = null;
+
+function initVoices() {
+  if (!window.speechSynthesis) return;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.filter(v => v.lang.startsWith("zh"));
+  if (preferred.length > 0) {
+    zhVoiceCache = preferred.find(v => v.name.includes("Tingting") || v.name.includes("Female") || v.name.includes("女"))
+      || preferred.find(v => v.name.includes("Xiaoxiao") || v.name.includes("Huihui"))
+      || preferred[0];
+  }
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = initVoices;
+  initVoices();
+}
 
 function playVoice(el, text) {
   if (!window.speechSynthesis) {
@@ -309,13 +333,18 @@ function playVoice(el, text) {
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = "zh-CN";
-  utter.rate = 1.0;
-  utter.pitch = 1.3;
+  utter.rate = 0.85;
+  utter.pitch = 1.4;
   utter.volume = 1.0;
 
-  const voices = window.speechSynthesis.getVoices();
-  const zhVoice = voices.find(v => v.lang.startsWith("zh"));
-  if (zhVoice) utter.voice = zhVoice;
+  if (zhVoiceCache) {
+    utter.voice = zhVoiceCache;
+  } else {
+    const voices = window.speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.name.includes("Tingting") || v.name.includes("Female"))
+      || voices.find(v => v.lang.startsWith("zh"));
+    if (zhVoice) utter.voice = zhVoice;
+  }
 
   utter.onstart = () => {
     el.classList.add("playing");
@@ -335,6 +364,7 @@ function playVoice(el, text) {
     currentVoiceEl = null;
   };
 
+  window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
 }
 
@@ -875,6 +905,19 @@ function clearChatHistory() {
   chatArea.innerHTML = "";
   closeModal();
   addMessage("聊天记录已清空", "system");
+}
+
+function retryImg(imgId, attempt) {
+  const img = document.getElementById(imgId);
+  if (!img || attempt >= 3) {
+    const loading = document.getElementById(imgId + "_loading");
+    if (loading) {
+      loading.innerHTML = "<span>图片加载失败</span>";
+    }
+    return;
+  }
+  const prompt = img.dataset.prompt;
+  img.src = `/api/image?prompt=${prompt}&t=${Date.now()}&retry=${attempt + 1}`;
 }
 
 // 事件绑定
