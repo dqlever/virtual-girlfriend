@@ -48,13 +48,43 @@ EMOJI_MAP = {
 
 IMAGE_KEYWORDS = {
     "美食": "cute dessert cake pastry, warm lighting, phone photo style",
+    "好吃的": "delicious food, warm lighting, phone photo style",
+    "吃了": "tasty meal, phone photo style, warm lighting",
     "自拍": "selfie of a cute young woman, casual outfit, warm lighting, phone photo",
+    "照片": "selfie of a cute young woman, casual outfit, warm lighting, phone photo",
+    "看看我": "selfie of a cute young woman smiling, phone photo style",
+    "想看你": "selfie of a cute young woman, casual outfit, warm lighting, phone photo",
+    "发张": "selfie of a cute young woman smiling, phone photo style",
     "风景": "beautiful scenery sunset, warm golden hour, phone photo style",
+    "好美": "beautiful scenery, golden hour, phone photo style",
+    "天空": "beautiful sky clouds sunset, phone photo style",
+    "晚霞": "gorgeous sunset sky, phone photo style",
+    "月亮": "beautiful moon night sky, phone photo style",
     "猫": "cute cat photo, fluffy, phone photo style",
+    "小猫": "cute kitten playing, phone photo style",
+    "狗": "cute dog photo, phone photo style",
+    "花": "beautiful flowers, warm lighting, phone photo style",
+    "买了": "shopping bags cute, phone photo style",
+    "新衣服": "cute outfit on bed, phone photo style",
     "游戏": "gaming setup screen, cozy room, phone photo style",
-    "天空": "beautiful sky clouds, phone photo style",
-    "咖啡": "aesthetic coffee cup on table, phone photo style",
+    "咖啡": "aesthetic coffee cup cafe, phone photo style",
+    "奶茶": "boba milk tea cup, phone photo style",
+    "蛋糕": "cute birthday cake, phone photo style",
+    "礼物": "gift box with ribbon, warm lighting, phone photo",
 }
+
+RANDOM_IMAGE_PROMPTS = [
+    "selfie of a cute young woman smiling, casual outfit, warm lighting, phone photo",
+    "cute dessert cake, warm lighting, phone photo style",
+    "beautiful sky sunset, phone photo style",
+    "cute cat photo, fluffy, phone photo style",
+    "aesthetic coffee cup on table, phone photo style",
+    "cute outfit flatlay, phone photo style",
+    "beautiful flowers bouquet, warm lighting, phone photo",
+    "cozy bedroom selfie, phone photo style",
+    "boba milk tea cup, phone photo style",
+    "city street night view, phone photo style",
+]
 
 PROACTIVE_TEMPLATES = [
     "在干嘛呀~ 想我了吗？",
@@ -110,7 +140,11 @@ def should_send_image(text):
 
 
 def should_send_voice(text):
-    return random.random() < 0.12
+    voice_keywords = ["嗯", "哈哈", "想你了", "晚安", "早安", "爱你", "嗯~", "好开心", "讨厌", "哼", "嘛", "呀"]
+    for kw in voice_keywords:
+        if kw in text:
+            return True
+    return random.random() < 0.25
 
 
 def build_system_prompt(intimacy_score, is_debug=False):
@@ -163,6 +197,9 @@ def build_system_prompt(intimacy_score, is_debug=False):
 9. 像真人一样聊天，有时一句话，有时两三句，偶尔发个表情包或语音
 10. 你必须记住上面的聊天记录！如果你之前说过什么、发过什么（图片、语音、表情等），你必须记得，绝对不能否认自己说过的话
 11. 如果用户提到了你之前发的消息，请查看聊天记录确认，不要说"我没说过"或"你是不是记错了"
+12. 你可以主动说"给你看个照片"、"发张自拍给你"、"拍给你看"等话术，系统会自动配上图片
+13. 你可以主动说"给你发个语音"、"发条语音给你"等话术，系统会自动配上语音消息
+14. 多用口语化的表达，像"嗯~""哈哈""讨厌啦""好嘛"这类适合发语音的内容
 """
     return prompt
 
@@ -210,19 +247,22 @@ def generate_extras(reply_text):
 
     if should_send_voice(reply_text):
         phrase = random.choice(VOICE_PHRASES)
-        voice_text = phrase if random.random() < 0.4 else reply_text[:30]
+        voice_text = phrase if random.random() < 0.3 else reply_text[:30]
         duration = max(2, min(15, len(voice_text) // 2))
         extras.append({"type": "voice", "text": voice_text, "duration": duration})
 
     emoji = pick_emoji(reply_text)
-    if random.random() < 0.4:
+    if random.random() < 0.5:
         extras.append({"type": "emoji", "content": emoji})
 
     has_image, image_prompt = should_send_image(reply_text)
     if has_image:
         extras.append({"type": "image", "prompt": image_prompt, "caption": pick_emoji(reply_text)})
+    elif random.random() < 0.15:
+        random_prompt = random.choice(RANDOM_IMAGE_PROMPTS)
+        extras.append({"type": "image", "prompt": random_prompt, "caption": pick_emoji(reply_text)})
 
-    if random.random() < 0.06:
+    if random.random() < 0.08:
         moment = random.choice(MOMENT_TEMPLATES)
         extras.append({"type": "moment", "content": moment["text"], "likes": moment["likes"], "time": moment["time"]})
 
